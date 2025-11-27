@@ -2,10 +2,10 @@
 /// Contains static configuration values for SIP registration
 class SipConfig {
   // SIP Username (Display name)
-  static const String sipUsername = "Sahad";
+  static String sipUsername = "";
 
   // SIP Auth Username (usually same as username)
-  static const String sipAuthUsername = "Sahad";
+  static String get sipAuthUsername => sipUsername;
 
   // SIP Password (required for authentication)
   static const String sipPassword = "Sahad";
@@ -14,7 +14,7 @@ class SipConfig {
   static const String sipDomain = "syscarecc.systech.ae";
 
   // Profile name (not important for SIP)
-  static const String profileName = "Sahad";
+  static String get profileName => sipUsername;
 
   // WebSocket Host
   static const String websocketHost = "syscarecc.systech.ae";

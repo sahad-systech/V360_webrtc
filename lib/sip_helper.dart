@@ -9,6 +9,7 @@ class SipManager implements SipUaHelperListener {
 
   OnRegisterCallback? onRegister;
   OnCallStateCallback? onCallState;
+  RegistrationState? currentRegistrationState;
 
   SipManager() {
     _uaHelper.addSipUaHelperListener(this);
@@ -92,6 +93,7 @@ class SipManager implements SipUaHelperListener {
     developer.log('=== Registration State Changed ===', name: 'SipManager');
     developer.log('State: ${state.state}', name: 'SipManager');
     developer.log('Cause: ${state.cause}', name: 'SipManager');
+    currentRegistrationState = state;
     onRegister?.call(state);
   }
 

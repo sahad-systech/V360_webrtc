@@ -18,8 +18,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late SipManager sip;
-  String registerStatus = "Not registered";
+  RegistrationStateEnum registerState = RegistrationStateEnum.NONE;
   Call? currentCall;
+  String _dialedNumber = '';
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
@@ -29,6 +30,10 @@ class _HomeScreenState extends State<HomeScreen>
 
     // Use the SipManager passed from LoginScreen
     sip = widget.sipManager;
+    if (sip.currentRegistrationState != null) {
+      registerState =
+          sip.currentRegistrationState!.state ?? RegistrationStateEnum.NONE;
+    }
 
     _animationController = AnimationController(
       vsync: this,
@@ -49,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen>
       developer.log('Registration Cause: ${state.cause}', name: 'HomeScreen');
 
       setState(() {
-        registerStatus = state.state.toString();
+        registerState = state.state ?? RegistrationStateEnum.NONE;
       });
     };
 
@@ -102,36 +107,6 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  void _makeCall() {
-    final callTarget = "sip:1002@${SipConfig.sipDomain}";
-    developer.log('=== Making Call ===', name: 'HomeScreen');
-    developer.log('Call Target: $callTarget', name: 'HomeScreen');
-    sip.uaHelper.call(callTarget);
-  }
-
-  void _register() {
-    developer.log('=== Register Button Pressed ===', name: 'HomeScreen');
-    developer.log('Using SipConfig values:', name: 'HomeScreen');
-    developer.log(
-      'WebSocket URL: ${SipConfig.websocketUrl}',
-      name: 'HomeScreen',
-    );
-    developer.log('SIP URI: ${SipConfig.sipUri}', name: 'HomeScreen');
-    developer.log(
-      'Auth Username: ${SipConfig.sipAuthUsername}',
-      name: 'HomeScreen',
-    );
-    developer.log('Display Name: ${SipConfig.sipUsername}', name: 'HomeScreen');
-
-    sip.registerToSip(
-      wsUrl: SipConfig.websocketUrl,
-      uri: SipConfig.sipUri,
-      user: SipConfig.sipAuthUsername,
-      password: SipConfig.sipPassword,
-      displayName: SipConfig.sipUsername,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -173,14 +148,6 @@ class _HomeScreenState extends State<HomeScreen>
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       children: [
-                        // Status Card
-                        _buildStatusCard(isDarkMode),
-                        const SizedBox(height: 24),
-
-                        // Action Buttons
-                        _buildActionButtons(isDarkMode),
-                        const SizedBox(height: 32),
-
                         // Dialpad
                         _buildDialpad(isDarkMode),
                       ],
@@ -205,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'SIP Phone',
+                SipConfig.profileName,
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -220,12 +187,13 @@ class _HomeScreenState extends State<HomeScreen>
                     height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: registerStatus.contains('REGISTERED')
+                      color: registerState == RegistrationStateEnum.REGISTERED
                           ? Colors.green
                           : Colors.orange,
                       boxShadow: [
                         BoxShadow(
-                          color: registerStatus.contains('REGISTERED')
+                          color:
+                              registerState == RegistrationStateEnum.REGISTERED
                               ? Colors.green.withOpacity(0.5)
                               : Colors.orange.withOpacity(0.5),
                           blurRadius: 8,
@@ -236,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    registerStatus.contains('REGISTERED')
+                    registerState == RegistrationStateEnum.REGISTERED
                         ? 'Online'
                         : 'Offline',
                     style: TextStyle(
@@ -264,7 +232,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             child: IconButton(
               icon: Icon(
-                Icons.person_outline_rounded,
+                Icons.settings,
                 color: isDarkMode ? Colors.white : Colors.black87,
               ),
               onPressed: () {
@@ -273,133 +241,6 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatusCard(bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDarkMode
-              ? [
-                  const Color(0xFF667eea).withOpacity(0.3),
-                  const Color(0xFF764ba2).withOpacity(0.3),
-                ]
-              : [const Color(0xFF667eea), const Color(0xFF764ba2)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF667eea).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(
-            registerStatus.contains('REGISTERED')
-                ? Icons.check_circle_outline_rounded
-                : Icons.info_outline_rounded,
-            size: 48,
-            color: Colors.white,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Connection Status',
-            style: TextStyle(fontSize: 16, color: Colors.white70),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            registerStatus,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(bool isDarkMode) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionButton(
-            icon: Icons.login_rounded,
-            label: 'Register',
-            onTap: _register,
-            isDarkMode: isDarkMode,
-            gradient: const LinearGradient(
-              colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildActionButton(
-            icon: Icons.call_rounded,
-            label: 'Call 1002',
-            onTap: _makeCall,
-            isDarkMode: isDarkMode,
-            gradient: const LinearGradient(
-              colors: [Color(0xFFf093fb), Color(0xFFf5576c)],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required bool isDarkMode,
-    required Gradient gradient,
-  }) {
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: gradient.colors.first.withOpacity(0.4),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: 24),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -420,18 +261,30 @@ class _HomeScreenState extends State<HomeScreen>
       ),
       child: Column(
         children: [
-          Text(
-            'Dialpad',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isDarkMode ? Colors.white : Colors.black87,
+          // Dialed Number Display
+          Container(
+            height: 60,
+            alignment: Alignment.center,
+            child: Text(
+              _dialedNumber,
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
             ),
           ),
           const SizedBox(height: 24),
           _buildDialpadGrid(isDarkMode),
           const SizedBox(height: 24),
-          _buildCallButton(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              const SizedBox(width: 70), // Spacer for alignment
+              _buildCallButton(),
+              _buildBackspaceButton(isDarkMode),
+            ],
+          ),
         ],
       ),
     );
@@ -493,7 +346,9 @@ class _HomeScreenState extends State<HomeScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // Handle dialpad button press
+            setState(() {
+              _dialedNumber += number;
+            });
           },
           customBorder: const CircleBorder(),
           child: Column(
@@ -545,10 +400,48 @@ class _HomeScreenState extends State<HomeScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // Handle call button press
+            if (_dialedNumber.isNotEmpty) {
+              sip.uaHelper.call(_dialedNumber);
+            }
           },
           customBorder: const CircleBorder(),
           child: const Icon(Icons.call_rounded, color: Colors.white, size: 32),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBackspaceButton(bool isDarkMode) {
+    if (_dialedNumber.isEmpty) {
+      return const SizedBox(width: 70, height: 70);
+    }
+    return SizedBox(
+      width: 70,
+      height: 70,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              if (_dialedNumber.isNotEmpty) {
+                _dialedNumber = _dialedNumber.substring(
+                  0,
+                  _dialedNumber.length - 1,
+                );
+              }
+            });
+          },
+          onLongPress: () {
+            setState(() {
+              _dialedNumber = '';
+            });
+          },
+          customBorder: const CircleBorder(),
+          child: Icon(
+            Icons.backspace_rounded,
+            color: isDarkMode ? Colors.white70 : Colors.black54,
+            size: 28,
+          ),
         ),
       ),
     );

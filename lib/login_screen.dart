@@ -123,6 +123,9 @@ class _LoginScreenState extends State<LoginScreen>
       final username = _usernameController.text.trim();
       final password = _passwordController.text.trim();
 
+      // Update SipConfig with the entered username
+      SipConfig.sipUsername = username;
+
       // Build SIP URI using the username from input
       final sipUri = 'sip:$username@${SipConfig.sipDomain}';
 
