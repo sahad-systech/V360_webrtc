@@ -7,7 +7,7 @@ class CallPage extends StatefulWidget {
   final Call call;
   final SIPUAHelper helper;
 
-  const CallPage({required this.call, required this.helper});
+  const CallPage({super.key, required this.call, required this.helper});
 
   @override
   State<CallPage> createState() => _CallPageState();
