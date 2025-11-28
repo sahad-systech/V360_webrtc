@@ -35,6 +35,7 @@ dependencies:
   sip_ua:
     git:
       url: https://github.com/cloudwebrtc/dart-sip-ua.git
+  provider: ^6.1.5+1
 
 
 dev_dependencies:

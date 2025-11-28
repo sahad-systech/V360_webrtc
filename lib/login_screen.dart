@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'home_screen.dart';
 import 'sip_helper.dart';
@@ -21,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  late SipManager _sipManager;
+  SipManager? _sipManager;
 
   @override
   void initState() {
@@ -47,16 +48,24 @@ class _LoginScreenState extends State<LoginScreen>
         );
 
     _animationController.forward();
+  }
 
-    // Initialize SIP Manager
-    _sipManager = SipManager();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sipManager == null) {
+      _sipManager = Provider.of<SipManager>(context);
+      _sipManager!.addListener(_onSipStateChanged);
+    }
+  }
 
-    // Listen for registration state changes
-    _sipManager.onRegister = (RegistrationState state) {
-      if (!mounted) return;
+  void _onSipStateChanged() {
+    final state = _sipManager?.currentRegistrationState;
+    if (state == null) return;
 
-      if (state.state == RegistrationStateEnum.REGISTERED) {
-        // Registration successful
+    if (state.state == RegistrationStateEnum.REGISTERED) {
+      // Registration successful
+      if (_isLoading) {
         setState(() => _isLoading = false);
 
         // Navigate to home screen
@@ -64,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen>
           context,
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                HomeScreen(sipManager: _sipManager),
+                const HomeScreen(),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
                   const begin = Offset(1.0, 0.0);
@@ -84,9 +93,11 @@ class _LoginScreenState extends State<LoginScreen>
             transitionDuration: const Duration(milliseconds: 600),
           ),
         );
-      } else if (state.state == RegistrationStateEnum.REGISTRATION_FAILED ||
-          state.state == RegistrationStateEnum.UNREGISTERED) {
-        // Registration failed
+      }
+    } else if (state.state == RegistrationStateEnum.REGISTRATION_FAILED ||
+        state.state == RegistrationStateEnum.UNREGISTERED) {
+      // Registration failed
+      if (_isLoading) {
         setState(() => _isLoading = false);
 
         // Show error message
@@ -105,11 +116,12 @@ class _LoginScreenState extends State<LoginScreen>
           );
         }
       }
-    };
+    }
   }
 
   @override
   void dispose() {
+    _sipManager?.removeListener(_onSipStateChanged);
     _animationController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
@@ -130,16 +142,13 @@ class _LoginScreenState extends State<LoginScreen>
       final sipUri = 'sip:$username@${SipConfig.sipDomain}';
 
       // Perform SIP registration
-      _sipManager.registerToSip(
+      context.read<SipManager>().registerToSip(
         wsUrl: SipConfig.websocketUrl,
         uri: sipUri,
         user: username,
         password: password,
         displayName: username,
       );
-
-      // The navigation will happen in the onRegister callback
-      // when registration is successful
     }
   }
 

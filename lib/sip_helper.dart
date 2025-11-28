@@ -1,15 +1,20 @@
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 import 'package:sip_ua/sip_ua.dart';
 
 typedef OnRegisterCallback = void Function(RegistrationState state);
 typedef OnCallStateCallback = void Function(CallState state, Call call);
 
-class SipManager implements SipUaHelperListener {
+class SipManager extends ChangeNotifier implements SipUaHelperListener {
   final SIPUAHelper _uaHelper = SIPUAHelper();
 
-  OnRegisterCallback? onRegister;
-  OnCallStateCallback? onCallState;
-  RegistrationState? currentRegistrationState;
+  RegistrationState? _currentRegistrationState;
+  Call? _currentCall;
+  CallState? _currentCallState;
+
+  RegistrationState? get currentRegistrationState => _currentRegistrationState;
+  Call? get currentCall => _currentCall;
+  CallState? get currentCallState => _currentCallState;
 
   SipManager() {
     _uaHelper.addSipUaHelperListener(this);
@@ -93,8 +98,8 @@ class SipManager implements SipUaHelperListener {
     developer.log('=== Registration State Changed ===', name: 'SipManager');
     developer.log('State: ${state.state}', name: 'SipManager');
     developer.log('Cause: ${state.cause}', name: 'SipManager');
-    currentRegistrationState = state;
-    onRegister?.call(state);
+    _currentRegistrationState = state;
+    notifyListeners();
   }
 
   @override
@@ -110,13 +115,16 @@ class SipManager implements SipUaHelperListener {
       'Remote Display Name: ${call.remote_display_name}',
       name: 'SipManager',
     );
-    onCallState?.call(state, call);
+    _currentCall = call;
+    _currentCallState = state;
+    notifyListeners();
   }
 
   @override
   void transportStateChanged(TransportState state) {
     developer.log('=== Transport State Changed ===', name: 'SipManager');
     developer.log('State: ${state.state}', name: 'SipManager');
+    notifyListeners();
   }
 
   @override
@@ -124,17 +132,20 @@ class SipManager implements SipUaHelperListener {
     developer.log('=== New SIP Message ===', name: 'SipManager');
     developer.log('From: ${msg.request.from}', name: 'SipManager');
     developer.log('Body: ${msg.request.body}', name: 'SipManager');
+    notifyListeners();
   }
 
   @override
   void onNewNotify(Notify ntf) {
     developer.log('=== New Notify ===', name: 'SipManager');
     developer.log('Notify: ${ntf.toString()}', name: 'SipManager');
+    notifyListeners();
   }
 
   @override
   void onNewReinvite(ReInvite event) {
     developer.log('=== New Re-Invite ===', name: 'SipManager');
     developer.log('ReInvite: ${event.toString()}', name: 'SipManager');
+    notifyListeners();
   }
 }

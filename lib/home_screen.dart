@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
 
 import 'sip_helper.dart';
@@ -7,9 +8,7 @@ import 'call_page.dart';
 import 'sip_config.dart';
 
 class HomeScreen extends StatefulWidget {
-  final SipManager sipManager;
-
-  const HomeScreen({super.key, required this.sipManager});
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,23 +16,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  late SipManager sip;
+  SipManager? _sipManager;
   RegistrationStateEnum registerState = RegistrationStateEnum.NONE;
   Call? currentCall;
   String _dialedNumber = '';
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  CallStateEnum? _lastCallState;
 
   @override
   void initState() {
     super.initState();
-
-    // Use the SipManager passed from LoginScreen
-    sip = widget.sipManager;
-    if (sip.currentRegistrationState != null) {
-      registerState =
-          sip.currentRegistrationState!.state ?? RegistrationStateEnum.NONE;
-    }
 
     _animationController = AnimationController(
       vsync: this,
@@ -47,62 +40,80 @@ class _HomeScreenState extends State<HomeScreen>
     _animationController.forward();
 
     developer.log('=== HomeScreen Initialized ===', name: 'HomeScreen');
+  }
 
-    sip.onRegister = (state) {
-      developer.log('=== Registration Callback ===', name: 'HomeScreen');
-      developer.log('Registration State: ${state.state}', name: 'HomeScreen');
-      developer.log('Registration Cause: ${state.cause}', name: 'HomeScreen');
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sipManager == null) {
+      _sipManager = Provider.of<SipManager>(context);
+      _sipManager!.addListener(_onSipStateChanged);
+      _onSipStateChanged(); // Initialize state
+    }
+  }
 
-      setState(() {
-        registerState = state.state ?? RegistrationStateEnum.NONE;
-      });
-    };
+  void _onSipStateChanged() {
+    final sip = _sipManager!;
 
-    sip.onCallState = (state, call) {
-      developer.log('=== Call State Callback ===', name: 'HomeScreen');
-      developer.log('Call State: ${state.state}', name: 'HomeScreen');
-      developer.log('Call Direction: ${call.direction}', name: 'HomeScreen');
-      developer.log(
-        'Remote Identity: ${call.remote_identity}',
-        name: 'HomeScreen',
-      );
-
-      if (state.state == CallStateEnum.CALL_INITIATION &&
-          call.direction == Direction.incoming) {
-        developer.log(
-          'Incoming call detected, navigating to CallPage',
-          name: 'HomeScreen',
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CallPage(call: call, helper: sip.uaHelper),
-          ),
-        );
+    // Update registration state
+    if (sip.currentRegistrationState != null) {
+      final newState =
+          sip.currentRegistrationState!.state ?? RegistrationStateEnum.NONE;
+      if (registerState != newState) {
+        setState(() {
+          registerState = newState;
+        });
+        developer.log('Registration State: $registerState', name: 'HomeScreen');
       }
+    }
 
-      if (state.state == CallStateEnum.PROGRESS) {
-        developer.log('Call in progress', name: 'HomeScreen');
-        currentCall = call;
-      }
+    // Handle call state
+    final call = sip.currentCall;
+    final callState = sip.currentCallState?.state;
 
-      if (state.state == CallStateEnum.ACCEPTED) {
-        developer.log(
-          'Call accepted, navigating to CallPage',
-          name: 'HomeScreen',
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CallPage(call: call, helper: sip.uaHelper),
-          ),
-        );
+    if (call != null && callState != null) {
+      // Only react if state changed
+      if (_lastCallState != callState) {
+        developer.log('=== Call State Changed ===', name: 'HomeScreen');
+        developer.log('Call State: $callState', name: 'HomeScreen');
+        developer.log('Call Direction: ${call.direction}', name: 'HomeScreen');
+
+        if (callState == CallStateEnum.CALL_INITIATION &&
+            call.direction == Direction.incoming) {
+          developer.log(
+            'Incoming call detected, navigating to CallPage',
+            name: 'HomeScreen',
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CallPage(call: call, helper: sip.uaHelper),
+            ),
+          );
+        } else if (callState == CallStateEnum.ACCEPTED) {
+          developer.log(
+            'Call accepted, navigating to CallPage',
+            name: 'HomeScreen',
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CallPage(call: call, helper: sip.uaHelper),
+            ),
+          );
+        } else if (callState == CallStateEnum.PROGRESS) {
+          developer.log('Call in progress', name: 'HomeScreen');
+          currentCall = call;
+        }
+
+        _lastCallState = callState;
       }
-    };
+    }
   }
 
   @override
   void dispose() {
+    _sipManager?.removeListener(_onSipStateChanged);
     _animationController.dispose();
     super.dispose();
   }
@@ -401,7 +412,7 @@ class _HomeScreenState extends State<HomeScreen>
         child: InkWell(
           onTap: () {
             if (_dialedNumber.isNotEmpty) {
-              sip.uaHelper.call(_dialedNumber);
+              _sipManager?.uaHelper.call(_dialedNumber);
             }
           },
           customBorder: const CircleBorder(),

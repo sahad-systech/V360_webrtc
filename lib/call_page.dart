@@ -1,7 +1,9 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
+import 'sip_helper.dart';
 
 class CallPage extends StatefulWidget {
   final Call call;
@@ -13,9 +15,10 @@ class CallPage extends StatefulWidget {
   State<CallPage> createState() => _CallPageState();
 }
 
-class _CallPageState extends State<CallPage> implements SipUaHelperListener {
+class _CallPageState extends State<CallPage> {
   final RTCVideoRenderer _local = RTCVideoRenderer();
   final RTCVideoRenderer _remote = RTCVideoRenderer();
+  SipManager? _sipManager;
 
   @override
   void initState() {
@@ -28,7 +31,15 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
       name: 'CallPage',
     );
     initRenderers();
-    widget.helper.addSipUaHelperListener(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sipManager == null) {
+      _sipManager = Provider.of<SipManager>(context);
+      _sipManager!.addListener(_onSipStateChanged);
+    }
   }
 
   Future<void> initRenderers() async {
@@ -43,20 +54,23 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
   @override
   void dispose() {
     developer.log('=== CallPage Disposing ===', name: 'CallPage');
-    widget.helper.removeSipUaHelperListener(this);
+    _sipManager?.removeListener(_onSipStateChanged);
     _local.dispose();
     _remote.dispose();
     super.dispose();
   }
 
-  @override
-  void callStateChanged(Call call, CallState state) {
-    developer.log('=== CallPage: Call State Changed ===', name: 'CallPage');
-    developer.log('Call ID: ${call.id}', name: 'CallPage');
-    developer.log('Widget Call ID: ${widget.call.id}', name: 'CallPage');
-    developer.log('State: ${state.state}', name: 'CallPage');
+  void _onSipStateChanged() {
+    final sip = _sipManager!;
+    final call = sip.currentCall;
+    final state = sip.currentCallState;
 
-    if (call.id == widget.call.id) {
+    if (call != null && state != null && call.id == widget.call.id) {
+      developer.log('=== CallPage: Call State Changed ===', name: 'CallPage');
+      developer.log('Call ID: ${call.id}', name: 'CallPage');
+      developer.log('Widget Call ID: ${widget.call.id}', name: 'CallPage');
+      developer.log('State: ${state.state}', name: 'CallPage');
+
       if (state.state == CallStateEnum.STREAM) {
         developer.log(
           'Stream received, originator: ${state.originator}',
@@ -79,25 +93,12 @@ class _CallPageState extends State<CallPage> implements SipUaHelperListener {
           'Call ended or failed, closing CallPage',
           name: 'CallPage',
         );
-        Navigator.of(context).pop();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       }
     }
   }
-
-  @override
-  void registrationStateChanged(RegistrationState state) {}
-
-  @override
-  void transportStateChanged(TransportState state) {}
-
-  @override
-  void onNewMessage(SIPMessageRequest msg) {}
-
-  @override
-  void onNewNotify(Notify ntf) {}
-
-  @override
-  void onNewReinvite(ReInvite event) {}
 
   @override
   Widget build(BuildContext context) {
