@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'home_screen.dart';
-import 'sip_helper.dart';
-import 'sip_config.dart';
+import '../provider/sip_helper.dart';
+import '../core/sip_config.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

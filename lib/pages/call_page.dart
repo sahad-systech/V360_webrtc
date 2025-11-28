@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
-import 'sip_helper.dart';
+import '../provider/sip_helper.dart';
 
 class CallPage extends StatefulWidget {
   final Call call;

@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
 
-import 'sip_helper.dart';
-import 'call_page.dart';
-import 'sip_config.dart';
+import '../provider/sip_helper.dart';
+import 'call_middle_section_page.dart';
+import '../core/sip_config.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -78,27 +78,18 @@ class _HomeScreenState extends State<HomeScreen>
         developer.log('Call State: $callState', name: 'HomeScreen');
         developer.log('Call Direction: ${call.direction}', name: 'HomeScreen');
 
+        // Only navigate for incoming calls - outgoing calls are handled by the call button
         if (callState == CallStateEnum.CALL_INITIATION &&
             call.direction == Direction.incoming) {
           developer.log(
-            'Incoming call detected, navigating to CallPage',
+            'Incoming call detected, navigating to CallMiddleSectionPage',
             name: 'HomeScreen',
           );
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CallPage(call: call, helper: sip.uaHelper),
-            ),
-          );
-        } else if (callState == CallStateEnum.ACCEPTED) {
-          developer.log(
-            'Call accepted, navigating to CallPage',
-            name: 'HomeScreen',
-          );
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CallPage(call: call, helper: sip.uaHelper),
+              builder: (_) =>
+                  CallMiddleSectionPage(call: call, helper: sip.uaHelper),
             ),
           );
         } else if (callState == CallStateEnum.PROGRESS) {
@@ -411,8 +402,25 @@ class _HomeScreenState extends State<HomeScreen>
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            if (_dialedNumber.isNotEmpty) {
-              _sipManager?.uaHelper.call(_dialedNumber);
+            if (_dialedNumber.isNotEmpty && _sipManager != null) {
+              // Initiate the call
+              _sipManager!.uaHelper.call(_dialedNumber);
+
+              // Wait a brief moment for the call to be created, then navigate
+              Future.delayed(const Duration(milliseconds: 100), () {
+                final call = _sipManager!.currentCall;
+                if (call != null && mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CallMiddleSectionPage(
+                        call: call,
+                        helper: _sipManager!.uaHelper,
+                      ),
+                    ),
+                  );
+                }
+              });
             }
           },
           customBorder: const CircleBorder(),
