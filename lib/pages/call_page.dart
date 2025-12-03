@@ -19,6 +19,10 @@ class _CallPageState extends State<CallPage> {
   final RTCVideoRenderer _local = RTCVideoRenderer();
   final RTCVideoRenderer _remote = RTCVideoRenderer();
   SipManager? _sipManager;
+  bool _isMuted = false;
+  bool _isSpeakerOn = false;
+  final String _callStatus = 'Call in Progress!';
+  int _callDuration = 0;
 
   @override
   void initState() {
@@ -31,6 +35,7 @@ class _CallPageState extends State<CallPage> {
       name: 'CallPage',
     );
     initRenderers();
+    _startCallTimer();
   }
 
   @override
@@ -49,6 +54,23 @@ class _CallPageState extends State<CallPage> {
     await _remote.initialize();
     developer.log('Remote renderer initialized', name: 'CallPage');
     setState(() {});
+  }
+
+  void _startCallTimer() {
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _callDuration++;
+        });
+        _startCallTimer();
+      }
+    });
+  }
+
+  String _formatDuration(int seconds) {
+    final int min = seconds ~/ 60;
+    final int sec = seconds % 60;
+    return '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -93,44 +115,263 @@ class _CallPageState extends State<CallPage> {
           'Call ended or failed, closing CallPage',
           name: 'CallPage',
         );
-        if (mounted) {
+        if (mounted && Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         }
       }
     }
   }
 
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+    });
+    widget.call.mute(_isMuted);
+  }
+
+  void _toggleSpeaker() {
+    setState(() {
+      _isSpeakerOn = !_isSpeakerOn;
+    });
+    // TODO: Implement speaker toggle
+  }
+
+  String _getDisplayNumber() {
+    final remoteIdentity = widget.call.remote_identity ?? 'Unknown';
+    return remoteIdentity.split('@').first.replaceFirst('sip:', '');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayNumber = _getDisplayNumber();
+
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          RTCVideoView(_remote),
-          Positioned(
-            right: 20,
-            bottom: 120,
-            child: SizedBox(
-              height: 150,
-              width: 110,
-              child: RTCVideoView(_local, mirror: true),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 40.0),
-              child: FloatingActionButton(
-                backgroundColor: Colors.red,
-                onPressed: () {
-                  developer.log('Hangup button pressed', name: 'CallPage');
-                  widget.call.hangup();
-                },
-                child: Icon(Icons.call_end),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header with Line info and controls
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Line 1 info
+                  Row(
+                    children: [
+                      Icon(Icons.phone, color: Colors.blue[800], size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Line 1',
+                        style: TextStyle(
+                          color: Colors.blue[800],
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Mute and Speaker icons
+                  Row(
+                    children: [
+                      Icon(
+                        _isMuted ? Icons.mic_off : Icons.mic,
+                        color: Colors.grey[700],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 16),
+                      Icon(
+                        _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
+                        color: Colors.grey[700],
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
+
+            // Phone number
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Text(
+                displayNumber,
+                style: const TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Call status and timer
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _callStatus,
+                    style: TextStyle(
+                      color: Colors.blue[800],
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(_callDuration),
+                    style: TextStyle(
+                      color: Colors.blue[800],
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 40),
+
+            // Large phone number display
+            Text(
+              displayNumber,
+              style: const TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+                letterSpacing: 1.5,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Secondary number display
+            Text(
+              displayNumber,
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+
+            const Spacer(),
+
+            // Control buttons container
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: [
+                  // Chevron up icon
+                  Icon(
+                    Icons.keyboard_arrow_up,
+                    color: Colors.grey[400],
+                    size: 32,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // First row of controls
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildControlButton(
+                        icon: _isMuted ? Icons.mic_off : Icons.mic,
+                        onPressed: _toggleMute,
+                        isActive: _isMuted,
+                      ),
+                      _buildControlButton(icon: Icons.pause, onPressed: () {}),
+                      _buildControlButton(
+                        icon: Icons.forward,
+                        onPressed: () {},
+                      ),
+                      _buildControlButton(icon: Icons.people, onPressed: () {}),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Second row of controls
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildControlButton(
+                        icon: Icons.dialpad,
+                        onPressed: () {},
+                      ),
+                      _buildControlButton(
+                        icon: _isSpeakerOn
+                            ? Icons.volume_up
+                            : Icons.volume_down,
+                        onPressed: _toggleSpeaker,
+                        isActive: _isSpeakerOn,
+                      ),
+                      // Hangup button
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.call_end,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          onPressed: () {
+                            developer.log(
+                              'Hangup button pressed',
+                              name: 'CallPage',
+                            );
+                            widget.call.hangup();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 56), // Spacer to balance layout
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool isActive = false,
+  }) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: isActive ? Colors.blue[700] : Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: IconButton(
+        icon: Icon(
+          icon,
+          color: isActive ? Colors.white : Colors.blue[700],
+          size: 24,
+        ),
+        onPressed: onPressed,
       ),
     );
   }
