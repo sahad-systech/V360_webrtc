@@ -19,9 +19,10 @@ class _CallPageState extends State<CallPage> {
   final RTCVideoRenderer _local = RTCVideoRenderer();
   final RTCVideoRenderer _remote = RTCVideoRenderer();
   SipManager? _sipManager;
+  bool _isHeld = false;
   bool _isMuted = false;
   bool _isSpeakerOn = false;
-  final String _callStatus = 'Call in Progress!';
+
   int _callDuration = 0;
 
   @override
@@ -106,6 +107,15 @@ class _CallPageState extends State<CallPage> {
           developer.log('Setting remote stream', name: 'CallPage');
           _remote.srcObject = stream;
         }
+
+        // Force speakerphone on by default
+        developer.log(
+          'Forcing speakerphone ON for iOS Simulator compatibility',
+          name: 'CallPage',
+        );
+        Helper.setSpeakerphoneOn(false);
+        _isSpeakerOn = false;
+
         setState(() {});
       }
 
@@ -129,11 +139,22 @@ class _CallPageState extends State<CallPage> {
     widget.call.mute(_isMuted);
   }
 
+  void _toggleHold() {
+    setState(() {
+      _isHeld = !_isHeld;
+    });
+    if (_isHeld) {
+      widget.call.hold();
+    } else {
+      widget.call.unhold();
+    }
+  }
+
   void _toggleSpeaker() {
     setState(() {
       _isSpeakerOn = !_isSpeakerOn;
     });
-    // TODO: Implement speaker toggle
+    Helper.setSpeakerphoneOn(_isSpeakerOn);
   }
 
   String _getDisplayNumber() {
@@ -213,7 +234,7 @@ class _CallPageState extends State<CallPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    _callStatus,
+                    _isHeld ? 'Call on Hold' : 'Call in Progress!',
                     style: TextStyle(
                       color: Colors.blue[800],
                       fontSize: 16,
@@ -283,7 +304,11 @@ class _CallPageState extends State<CallPage> {
                         onPressed: _toggleMute,
                         isActive: _isMuted,
                       ),
-                      _buildControlButton(icon: Icons.pause, onPressed: () {}),
+                      _buildControlButton(
+                        icon: Icons.pause,
+                        onPressed: _toggleHold,
+                        isActive: _isHeld,
+                      ),
                       _buildControlButton(
                         icon: Icons.forward,
                         onPressed: () {},
