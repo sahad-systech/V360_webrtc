@@ -36,6 +36,8 @@ dependencies:
     git:
       url: https://github.com/cloudwebrtc/dart-sip-ua.git
   provider: ^6.1.5+1
+  flutter_callkit_incoming: ^3.0.0
+  uuid: ^4.5.2
  
 
 

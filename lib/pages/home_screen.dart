@@ -79,22 +79,32 @@ class _HomeScreenState extends State<HomeScreen>
         developer.log('Call Direction: ${call.direction}', name: 'HomeScreen');
 
         // Only navigate for incoming calls - outgoing calls are handled by the call button
-        if (callState == CallStateEnum.CALL_INITIATION &&
+        // Also handle if call is already accepted (e.g. via CallKit)
+        if ((callState == CallStateEnum.CALL_INITIATION ||
+                callState == CallStateEnum.CONFIRMED ||
+                callState == CallStateEnum.STREAM) &&
             call.direction == Direction.incoming) {
+          if (currentCall?.id == call.id) {
+            return;
+          }
+
           developer.log(
             'Incoming call detected, navigating to CallMiddleSectionPage',
             name: 'HomeScreen',
           );
+          currentCall = call;
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) =>
                   CallMiddleSectionPage(call: call, helper: sip.uaHelper),
             ),
-          );
+          ).then((_) {
+            currentCall = null;
+          });
         } else if (callState == CallStateEnum.PROGRESS) {
           developer.log('Call in progress', name: 'HomeScreen');
-          currentCall = call;
+          // currentCall = call; // Already handled above
         }
 
         _lastCallState = callState;

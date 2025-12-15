@@ -1,12 +1,16 @@
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:sip_ua/sip_ua.dart';
+import 'package:uuid/uuid.dart';
+import '../services/callkit_service.dart';
 
 typedef OnRegisterCallback = void Function(RegistrationState state);
 typedef OnCallStateCallback = void Function(CallState state, Call call);
 
 class SipManager extends ChangeNotifier implements SipUaHelperListener {
   final SIPUAHelper _uaHelper = SIPUAHelper();
+  final CallKitService _callKitService = CallKitService();
+  final Map<String, String> _sipCallIdToUuid = {};
 
   RegistrationState? _currentRegistrationState;
   Call? _currentCall;
@@ -18,6 +22,37 @@ class SipManager extends ChangeNotifier implements SipUaHelperListener {
 
   SipManager() {
     _uaHelper.addSipUaHelperListener(this);
+    _initCallKit();
+  }
+
+  void _initCallKit() {
+    _callKitService.init();
+    _callKitService.onCallAccepted = (uuid) {
+      final sipCallId = _sipCallIdToUuid.entries
+          .firstWhere(
+            (element) => element.value == uuid,
+            orElse: () => const MapEntry('', ''),
+          )
+          .key;
+      if (sipCallId.isNotEmpty &&
+          _currentCall != null &&
+          _currentCall!.id == sipCallId) {
+        _currentCall!.answer(_uaHelper.buildCallOptions());
+      }
+    };
+    _callKitService.onCallEnded = (uuid) {
+      final sipCallId = _sipCallIdToUuid.entries
+          .firstWhere(
+            (element) => element.value == uuid,
+            orElse: () => const MapEntry('', ''),
+          )
+          .key;
+      if (sipCallId.isNotEmpty &&
+          _currentCall != null &&
+          _currentCall!.id == sipCallId) {
+        _currentCall!.hangup();
+      }
+    };
   }
 
   SIPUAHelper get uaHelper => _uaHelper;
@@ -117,6 +152,27 @@ class SipManager extends ChangeNotifier implements SipUaHelperListener {
     );
     _currentCall = call;
     _currentCallState = state;
+
+    if (state.state == CallStateEnum.CALL_INITIATION &&
+        call.direction == 'INCOMING') {
+      final uuid = const Uuid().v4();
+      if (call.id != null) {
+        _sipCallIdToUuid[call.id!] = uuid;
+      }
+      _callKitService.showIncomingCall(
+        uuid: uuid,
+        name: call.remote_display_name ?? 'Unknown',
+        handle: call.remote_identity ?? 'Unknown',
+      );
+    } else if (state.state == CallStateEnum.ENDED ||
+        state.state == CallStateEnum.FAILED) {
+      if (call.id != null && _sipCallIdToUuid.containsKey(call.id)) {
+        final uuid = _sipCallIdToUuid[call.id]!;
+        _callKitService.endCall(uuid);
+        _sipCallIdToUuid.remove(call.id);
+      }
+    }
+
     notifyListeners();
   }
 
