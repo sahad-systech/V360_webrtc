@@ -18,12 +18,7 @@ void main() {
     ),
   );
 
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => SipManager(),
-      child: const MyApp(),
-    ),
-  );
+  runApp(Provider(create: (context) => SipManager(), child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {

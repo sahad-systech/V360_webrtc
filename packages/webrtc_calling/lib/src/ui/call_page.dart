@@ -1,15 +1,20 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
 import '../services/sip_manager.dart';
 
 class CallPage extends StatefulWidget {
   final Call call;
   final SIPUAHelper helper;
+  final SipManager sipManager;
 
-  const CallPage({super.key, required this.call, required this.helper});
+  const CallPage({
+    super.key,
+    required this.call,
+    required this.helper,
+    required this.sipManager,
+  });
 
   @override
   State<CallPage> createState() => _CallPageState();
@@ -18,7 +23,6 @@ class CallPage extends StatefulWidget {
 class _CallPageState extends State<CallPage> {
   final RTCVideoRenderer _local = RTCVideoRenderer();
   final RTCVideoRenderer _remote = RTCVideoRenderer();
-  SipManager? _sipManager;
   bool _isHeld = false;
   bool _isMuted = false;
   bool _isSpeakerOn = false;
@@ -42,10 +46,8 @@ class _CallPageState extends State<CallPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_sipManager == null) {
-      _sipManager = Provider.of<SipManager>(context);
-      _sipManager!.addListener(_onSipStateChanged);
-    }
+    // Register callback for call state changes
+    widget.sipManager.onCallStateChanged = _onCallStateChanged;
   }
 
   Future<void> initRenderers() async {
@@ -77,18 +79,15 @@ class _CallPageState extends State<CallPage> {
   @override
   void dispose() {
     developer.log('=== CallPage Disposing ===', name: 'CallPage');
-    _sipManager?.removeListener(_onSipStateChanged);
+    // Unregister callback
+    widget.sipManager.onCallStateChanged = null;
     _local.dispose();
     _remote.dispose();
     super.dispose();
   }
 
-  void _onSipStateChanged() {
-    final sip = _sipManager!;
-    final call = sip.currentCall;
-    final state = sip.currentCallState;
-
-    if (call != null && state != null && call.id == widget.call.id) {
+  void _onCallStateChanged(CallState state, Call call) {
+    if (call.id == widget.call.id) {
       developer.log('=== CallPage: Call State Changed ===', name: 'CallPage');
       developer.log('Call ID: ${call.id}', name: 'CallPage');
       developer.log('Widget Call ID: ${widget.call.id}', name: 'CallPage');

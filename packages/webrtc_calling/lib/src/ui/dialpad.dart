@@ -1,13 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../services/sip_manager.dart';
 import 'call_middle_section.dart';
 
 class DialPad extends StatefulWidget {
   final bool isDarkMode;
+  final SipManager sipManager;
 
-  const DialPad({super.key, required this.isDarkMode});
+  const DialPad({
+    super.key,
+    required this.isDarkMode,
+    required this.sipManager,
+  });
 
   @override
   State<DialPad> createState() => _DialPadState();
@@ -15,32 +19,26 @@ class DialPad extends StatefulWidget {
 
 class _DialPadState extends State<DialPad> {
   String _dialedNumber = '';
-  SipManager? _sipManager;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _sipManager ??= Provider.of<SipManager>(context);
-  }
 
   void _handleCall() {
-    if (_dialedNumber.isNotEmpty && _sipManager != null) {
+    if (_dialedNumber.isNotEmpty) {
       // Initiate the call
-      _sipManager!.uaHelper.call(_dialedNumber);
+      widget.sipManager.uaHelper.call(_dialedNumber);
 
       // Wait a brief moment for the call to be created, then navigate
       // Note: In a production app you might want to wait for a specific state change
       // or callback from the sip helper instead of a fixed delay.
       Future.delayed(const Duration(milliseconds: 100), () {
         if (!mounted) return;
-        final call = _sipManager!.currentCall;
+        final call = widget.sipManager.currentCall;
         if (call != null) {
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => CallMiddleSectionPage(
                 call: call,
-                helper: _sipManager!.uaHelper,
+                helper: widget.sipManager.uaHelper,
+                sipManager: widget.sipManager,
               ),
             ),
           );

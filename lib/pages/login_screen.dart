@@ -54,8 +54,12 @@ class _LoginScreenState extends State<LoginScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_sipManager == null) {
-      _sipManager = Provider.of<SipManager>(context);
-      _sipManager!.addListener(_onSipStateChanged);
+      _sipManager = Provider.of<SipManager>(context, listen: false);
+      _sipManager!.onRegistrationStateChanged = (state) {
+        if (mounted) {
+          _onSipStateChanged();
+        }
+      };
     }
   }
 
@@ -121,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void dispose() {
-    _sipManager?.removeListener(_onSipStateChanged);
+    _sipManager?.onRegistrationStateChanged = null;
     _animationController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();

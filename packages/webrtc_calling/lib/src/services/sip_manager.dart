@@ -1,13 +1,13 @@
 import 'dart:developer' as developer;
-import 'package:flutter/foundation.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'package:uuid/uuid.dart';
 import 'callkit_service.dart';
 
-typedef OnRegisterCallback = void Function(RegistrationState state);
+typedef OnRegistrationStateCallback = void Function(RegistrationState state);
 typedef OnCallStateCallback = void Function(CallState state, Call call);
+typedef OnTransportStateCallback = void Function(TransportState state);
 
-class SipManager extends ChangeNotifier implements SipUaHelperListener {
+class SipManager implements SipUaHelperListener {
   final SIPUAHelper _uaHelper = SIPUAHelper();
   final CallKitService _callKitService = CallKitService();
   final Map<String, String> _sipCallIdToUuid = {};
@@ -15,6 +15,11 @@ class SipManager extends ChangeNotifier implements SipUaHelperListener {
   RegistrationState? _currentRegistrationState;
   Call? _currentCall;
   CallState? _currentCallState;
+
+  // Callbacks for state changes
+  OnRegistrationStateCallback? onRegistrationStateChanged;
+  OnCallStateCallback? onCallStateChanged;
+  OnTransportStateCallback? onTransportStateChanged;
 
   RegistrationState? get currentRegistrationState => _currentRegistrationState;
   Call? get currentCall => _currentCall;
@@ -134,7 +139,7 @@ class SipManager extends ChangeNotifier implements SipUaHelperListener {
     developer.log('State: ${state.state}', name: 'SipManager');
     developer.log('Cause: ${state.cause}', name: 'SipManager');
     _currentRegistrationState = state;
-    notifyListeners();
+    onRegistrationStateChanged?.call(state);
   }
 
   @override
@@ -173,14 +178,14 @@ class SipManager extends ChangeNotifier implements SipUaHelperListener {
       }
     }
 
-    notifyListeners();
+    onCallStateChanged?.call(state, call);
   }
 
   @override
   void transportStateChanged(TransportState state) {
     developer.log('=== Transport State Changed ===', name: 'SipManager');
     developer.log('State: ${state.state}', name: 'SipManager');
-    notifyListeners();
+    onTransportStateChanged?.call(state);
   }
 
   @override
@@ -188,20 +193,20 @@ class SipManager extends ChangeNotifier implements SipUaHelperListener {
     developer.log('=== New SIP Message ===', name: 'SipManager');
     developer.log('From: ${msg.request.from}', name: 'SipManager');
     developer.log('Body: ${msg.request.body}', name: 'SipManager');
-    notifyListeners();
+    // No callback needed for messages currently
   }
 
   @override
   void onNewNotify(Notify ntf) {
     developer.log('=== New Notify ===', name: 'SipManager');
     developer.log('Notify: ${ntf.toString()}', name: 'SipManager');
-    notifyListeners();
+    // No callback needed for notify currently
   }
 
   @override
   void onNewReinvite(ReInvite event) {
     developer.log('=== New Re-Invite ===', name: 'SipManager');
     developer.log('ReInvite: ${event.toString()}', name: 'SipManager');
-    notifyListeners();
+    // No callback needed for reinvite currently
   }
 }

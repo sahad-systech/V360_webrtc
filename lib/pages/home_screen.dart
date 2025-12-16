@@ -44,13 +44,19 @@ class _HomeScreenState extends State<HomeScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_sipManager == null) {
-      _sipManager = Provider.of<SipManager>(context);
-      _sipManager!.addListener(_onSipStateChanged);
+      _sipManager = Provider.of<SipManager>(context, listen: false);
+      _sipManager!.onRegistrationStateChanged = (state) {
+        if (mounted) _onSipStateChanged();
+      };
+      _sipManager!.onCallStateChanged = (state, call) {
+        if (mounted) _onSipStateChanged();
+      };
       _onSipStateChanged(); // Initialize state
     }
   }
 
   void _onSipStateChanged() {
+    if (!mounted) return;
     final sip = _sipManager!;
 
     // Update registration state
@@ -94,8 +100,11 @@ class _HomeScreenState extends State<HomeScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  CallMiddleSectionPage(call: call, helper: sip.uaHelper),
+              builder: (_) => CallMiddleSectionPage(
+                call: call,
+                helper: sip.uaHelper,
+                sipManager: sip,
+              ),
             ),
           ).then((_) {
             currentCall = null;
@@ -112,7 +121,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
-    _sipManager?.removeListener(_onSipStateChanged);
+    if (_sipManager != null) {
+      _sipManager!.onRegistrationStateChanged = null;
+      _sipManager!.onCallStateChanged = null;
+    }
     _animationController.dispose();
     super.dispose();
   }
@@ -159,7 +171,10 @@ class _HomeScreenState extends State<HomeScreen>
                     child: Column(
                       children: [
                         // Dialpad
-                        DialPad(isDarkMode: isDarkMode),
+                        DialPad(
+                          isDarkMode: isDarkMode,
+                          sipManager: _sipManager!,
+                        ),
                       ],
                     ),
                   ),

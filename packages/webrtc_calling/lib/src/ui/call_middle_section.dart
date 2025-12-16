@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
 import '../services/sip_manager.dart';
 import 'call_page.dart';
@@ -8,11 +7,13 @@ import 'call_page.dart';
 class CallMiddleSectionPage extends StatefulWidget {
   final Call call;
   final SIPUAHelper helper;
+  final SipManager sipManager;
 
   const CallMiddleSectionPage({
     super.key,
     required this.call,
     required this.helper,
+    required this.sipManager,
   });
 
   @override
@@ -20,7 +21,6 @@ class CallMiddleSectionPage extends StatefulWidget {
 }
 
 class _CallMiddleSectionPageState extends State<CallMiddleSectionPage> {
-  SipManager? _sipManager;
   String _callStatus = 'Starting Audio Call...';
   Timer? _durationTimer;
   int _secondsElapsed = 0;
@@ -35,15 +35,14 @@ class _CallMiddleSectionPageState extends State<CallMiddleSectionPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_sipManager == null) {
-      _sipManager = Provider.of<SipManager>(context);
-      _sipManager!.addListener(_onSipStateChanged);
-    }
+    // Register callback for call state changes
+    widget.sipManager.onCallStateChanged = _onCallStateChanged;
   }
 
   @override
   void dispose() {
-    _sipManager?.removeListener(_onSipStateChanged);
+    // Unregister callback
+    widget.sipManager.onCallStateChanged = null;
     _durationTimer?.cancel();
     super.dispose();
   }
@@ -64,26 +63,26 @@ class _CallMiddleSectionPageState extends State<CallMiddleSectionPage> {
     return '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
   }
 
-  void _onSipStateChanged() {
+  void _onCallStateChanged(CallState state, Call call) {
     // Don't process state changes if we've already navigated away
     if (_hasNavigatedAway || !mounted) return;
 
-    final sip = _sipManager!;
-    final call = sip.currentCall;
-    final state = sip.currentCallState;
-
-    if (call != null && state != null && call.id == widget.call.id) {
+    if (call.id == widget.call.id) {
       // Handle call accepted - navigate to CallPage
       if (state.state == CallStateEnum.CONFIRMED) {
         _hasNavigatedAway = true;
-        _sipManager?.removeListener(_onSipStateChanged);
+        widget.sipManager.onCallStateChanged = null;
         _durationTimer?.cancel();
 
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => CallPage(call: call, helper: widget.helper),
+              builder: (_) => CallPage(
+                call: call,
+                helper: widget.helper,
+                sipManager: widget.sipManager,
+              ),
             ),
           );
         }
