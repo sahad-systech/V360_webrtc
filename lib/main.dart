@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'pages/login_screen.dart';
-import 'provider/sip_helper.dart';
+import 'package:webrtc_calling/webrtc_calling.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

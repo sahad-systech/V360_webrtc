@@ -57,14 +57,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
-  cupertino_icons:
-    dependency: "direct main"
-    description:
-      name: cupertino_icons
-      sha256: ba631d1c7f7bef6b729a622b7b752645a2d076dba9976925b8f25725a30e1ee6
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.8"
   dart_webrtc:
     dependency: transitive
     description:
@@ -344,7 +336,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: f88abac7932479a98b52bf96e18a05a69ed660e4
+      resolved-ref: ec5ef8f213cb14af51a82d6ea0ac22e698b99b52
       url: "https://github.com/cloudwebrtc/dart-sip-ua.git"
     source: git
     version: "1.1.0"
@@ -457,13 +449,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
-  webrtc_calling:
-    dependency: "direct main"
-    description:
-      path: "packages/webrtc_calling"
-      relative: true
-    source: path
-    version: "0.0.1"
   webrtc_interface:
     dependency: transitive
     description:

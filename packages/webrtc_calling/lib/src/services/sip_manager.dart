@@ -2,7 +2,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'package:uuid/uuid.dart';
-import '../services/callkit_service.dart';
+import 'callkit_service.dart';
 
 typedef OnRegisterCallback = void Function(RegistrationState state);
 typedef OnCallStateCallback = void Function(CallState state, Call call);

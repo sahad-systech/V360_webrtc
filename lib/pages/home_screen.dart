@@ -2,9 +2,8 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
+import 'package:webrtc_calling/webrtc_calling.dart';
 
-import '../provider/sip_helper.dart';
-import 'call_middle_section_page.dart';
 import '../core/sip_config.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,7 +18,6 @@ class _HomeScreenState extends State<HomeScreen>
   SipManager? _sipManager;
   RegistrationStateEnum registerState = RegistrationStateEnum.NONE;
   Call? currentCall;
-  String _dialedNumber = '';
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   CallStateEnum? _lastCallState;
@@ -161,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen>
                     child: Column(
                       children: [
                         // Dialpad
-                        _buildDialpad(isDarkMode),
+                        DialPad(isDarkMode: isDarkMode),
                       ],
                     ),
                   ),
@@ -206,8 +204,8 @@ class _HomeScreenState extends State<HomeScreen>
                         BoxShadow(
                           color:
                               registerState == RegistrationStateEnum.REGISTERED
-                              ? Colors.green.withOpacity(0.5)
-                              : Colors.orange.withOpacity(0.5),
+                              ? Colors.green.withValues(alpha: 0.5)
+                              : Colors.orange.withValues(alpha: 0.5),
                           blurRadius: 8,
                           spreadRadius: 2,
                         ),
@@ -222,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen>
                     style: TextStyle(
                       fontSize: 14,
                       color: isDarkMode
-                          ? Colors.white.withOpacity(0.7)
+                          ? Colors.white.withValues(alpha: 0.7)
                           : Colors.grey.shade600,
                     ),
                   ),
@@ -233,10 +231,12 @@ class _HomeScreenState extends State<HomeScreen>
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.white,
+              color: isDarkMode
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -253,225 +253,6 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDialpad(bool isDarkMode) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Dialed Number Display
-          Container(
-            height: 60,
-            alignment: Alignment.center,
-            child: Text(
-              _dialedNumber,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black87,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildDialpadGrid(isDarkMode),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              const SizedBox(width: 70), // Spacer for alignment
-              _buildCallButton(),
-              _buildBackspaceButton(isDarkMode),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDialpadGrid(bool isDarkMode) {
-    final buttons = [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
-      ['7', '8', '9'],
-      ['*', '0', '#'],
-    ];
-
-    final subLabels = [
-      ['', 'ABC', 'DEF'],
-      ['GHI', 'JKL', 'MNO'],
-      ['PQRS', 'TUV', 'WXYZ'],
-      ['', '+', ''],
-    ];
-
-    return Column(
-      children: List.generate(
-        buttons.length,
-        (rowIndex) => Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(
-              buttons[rowIndex].length,
-              (colIndex) => _buildDialpadButton(
-                buttons[rowIndex][colIndex],
-                subLabels[rowIndex][colIndex],
-                isDarkMode,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDialpadButton(String number, String letters, bool isDarkMode) {
-    return Container(
-      width: 70,
-      height: 70,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isDarkMode
-            ? Colors.white.withOpacity(0.1)
-            : Colors.grey.shade100,
-        border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withOpacity(0.1)
-              : Colors.grey.shade300,
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            setState(() {
-              _dialedNumber += number;
-            });
-          },
-          customBorder: const CircleBorder(),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                number,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                ),
-              ),
-              if (letters.isNotEmpty)
-                Text(
-                  letters,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isDarkMode
-                        ? Colors.white.withOpacity(0.5)
-                        : Colors.grey.shade600,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCallButton() {
-    return Container(
-      width: 70,
-      height: 70,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [Color(0xFF11998e), Color(0xFF38ef7d)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF11998e).withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            if (_dialedNumber.isNotEmpty && _sipManager != null) {
-              // Initiate the call
-              _sipManager!.uaHelper.call(_dialedNumber);
-
-              // Wait a brief moment for the call to be created, then navigate
-              Future.delayed(const Duration(milliseconds: 100), () {
-                final call = _sipManager!.currentCall;
-                if (call != null && mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CallMiddleSectionPage(
-                        call: call,
-                        helper: _sipManager!.uaHelper,
-                      ),
-                    ),
-                  );
-                }
-              });
-            }
-          },
-          customBorder: const CircleBorder(),
-          child: const Icon(Icons.call_rounded, color: Colors.white, size: 32),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBackspaceButton(bool isDarkMode) {
-    if (_dialedNumber.isEmpty) {
-      return const SizedBox(width: 70, height: 70);
-    }
-    return SizedBox(
-      width: 70,
-      height: 70,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            setState(() {
-              if (_dialedNumber.isNotEmpty) {
-                _dialedNumber = _dialedNumber.substring(
-                  0,
-                  _dialedNumber.length - 1,
-                );
-              }
-            });
-          },
-          onLongPress: () {
-            setState(() {
-              _dialedNumber = '';
-            });
-          },
-          customBorder: const CircleBorder(),
-          child: Icon(
-            Icons.backspace_rounded,
-            color: isDarkMode ? Colors.white70 : Colors.black54,
-            size: 28,
-          ),
-        ),
       ),
     );
   }

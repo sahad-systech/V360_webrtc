@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sip_ua/sip_ua.dart';
 import 'home_screen.dart';
-import '../provider/sip_helper.dart';
+import 'package:webrtc_calling/webrtc_calling.dart';
 import '../core/sip_config.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -219,13 +219,13 @@ class _LoginScreenState extends State<LoginScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white.withOpacity(0.3),
-                Colors.white.withOpacity(0.1),
+                Colors.white.withValues(alpha: 0.3),
+                Colors.white.withValues(alpha: 0.1),
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -252,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen>
           'Sign in to continue',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             letterSpacing: 0.3,
           ),
         ),
@@ -265,17 +265,20 @@ class _LoginScreenState extends State<LoginScreen>
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: isDarkMode
-            ? Colors.white.withOpacity(0.1)
-            : Colors.white.withOpacity(0.95),
+            ? Colors.white.withValues(alpha: 0.1)
+            : Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
       ),
       child: Form(
         key: _formKey,
@@ -341,13 +344,13 @@ class _LoginScreenState extends State<LoginScreen>
         labelText: label,
         labelStyle: TextStyle(
           color: isDarkMode
-              ? Colors.white.withOpacity(0.7)
+              ? Colors.white.withValues(alpha: 0.7)
               : Colors.grey.shade600,
         ),
         prefixIcon: Icon(
           icon,
           color: isDarkMode
-              ? Colors.white.withOpacity(0.7)
+              ? Colors.white.withValues(alpha: 0.7)
               : const Color(0xFF667eea),
         ),
         suffixIcon: isPassword
@@ -357,7 +360,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ? Icons.visibility_off_rounded
                       : Icons.visibility_rounded,
                   color: isDarkMode
-                      ? Colors.white.withOpacity(0.7)
+                      ? Colors.white.withValues(alpha: 0.7)
                       : Colors.grey.shade600,
                 ),
                 onPressed: () {
@@ -369,7 +372,7 @@ class _LoginScreenState extends State<LoginScreen>
             : null,
         filled: true,
         fillColor: isDarkMode
-            ? Colors.white.withOpacity(0.05)
+            ? Colors.white.withValues(alpha: 0.05)
             : Colors.grey.shade50,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -379,7 +382,7 @@ class _LoginScreenState extends State<LoginScreen>
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
             color: isDarkMode
-                ? Colors.white.withOpacity(0.1)
+                ? Colors.white.withValues(alpha: 0.1)
                 : Colors.grey.shade200,
             width: 1,
           ),
@@ -415,7 +418,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF667eea).withOpacity(0.4),
+            color: const Color(0xFF667eea).withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),

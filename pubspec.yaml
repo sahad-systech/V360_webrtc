@@ -38,6 +38,8 @@ dependencies:
   provider: ^6.1.5+1
   flutter_callkit_incoming: ^3.0.0
   uuid: ^4.5.2
+  webrtc_calling:
+    path: packages/webrtc_calling
  
 
 
